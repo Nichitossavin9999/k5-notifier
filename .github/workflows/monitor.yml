@@ -1,0 +1,48 @@
+name: K5 Safe Cloud Check
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check-cars:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: k5-safe-group
+      cancel-in-progress: false
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install HTTP client
+        run: pip install aiohttp aiohttp-socks
+
+      - name: Run 20-second check
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: python -u bot_safe.py
+
+      - name: Save state
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          cp encar_bot_data.json /tmp/encar_bot_data.json || true
+          git fetch origin main
+          git reset --hard origin/main
+          cp /tmp/encar_bot_data.json encar_bot_data.json || true
+          git add encar_bot_data.json
+          git diff --staged --quiet || (git commit -m "Sync state" && git push origin main) || true
