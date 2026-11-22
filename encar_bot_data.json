@@ -36,5 +36,5 @@
     "43195641"
   ],
   "last_update_id": 746982578,
-  "working_proxy": "http://218.232.234.167:80"
+  "working_proxy": "socks5://219.78.223.199:5001"
 }
